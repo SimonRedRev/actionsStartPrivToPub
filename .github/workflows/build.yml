@@ -1,0 +1,65 @@
+name: Manual Idle Workflow
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for running this workflow'
+        required: false
+        default: 'Manual test run'
+
+jobs:
+  idle-and-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Idle for 5 hours
+        run: |
+          echo "Starting idle period at $(date)"
+          sleep 18000  # Sleep for 5 hours (18000 seconds)
+          echo "Idle period ended at $(date)"
+
+      - name: Gather instance specifications and details
+        run: |
+          echo "Collecting system specifications and runtime details..."
+          {
+            echo "GitHub Actions Instance Specifications and Runtime Report"
+            echo "========================================================="
+            echo "Report generated at: $(date)"
+            echo "Workflow Name: ${{ github.workflow }}"
+            echo "Run ID: ${{ github.run_id }}"
+            echo "Run Number: ${{ github.run_number }}"
+            echo "Triggered by: ${{ github.actor }}"
+            echo "Reason for run: ${{ github.event.inputs.reason }}"
+            echo "Repository: ${{ github.repository }}"
+            echo "Branch/Ref: ${{ github.ref }}"
+            echo "Runner OS: ${{ runner.os }}"
+            echo "Runner Name: ${{ runner.name }}"
+            echo ""
+            echo "Instance Specifications:"
+            echo "-----------------------"
+            echo "CPU Information:"
+            lscpu | grep -E 'Model name|Architecture|CPU\(s\)|Thread\(s\) per core|Core\(s\) per socket|Socket\(s\)'
+            echo ""
+            echo "Memory (RAM) Information:"
+            free -h | grep -E 'Mem|Swap'
+            echo ""
+            echo "Disk Storage Information:"
+            df -h | grep -E 'Filesystem|/dev/'
+            echo ""
+            echo "Additional System Details:"
+            echo "Kernel Version: $(uname -r)"
+            echo "OS Release: $(cat /etc/os-release | grep -E 'PRETTY_NAME|VERSION')"
+            echo ""
+            echo "Runtime Details:"
+            echo "----------------"
+            echo "Workflow Start Time: $(date)"
+            echo "Idle Duration: 5 hours (18000 seconds)"
+            echo "Current Time (End of Idle): $(date)"
+          } > instance_report.txt
+
+      - name: Upload instance report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: instance-report
+          path: instance_report.txt
+          retention-days: 7
+          if-no-files-found: error
